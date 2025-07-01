@@ -1,25 +1,35 @@
 let SongArray = [];
 
-function searchMusicBox(url, music, artist) {
+function searchMusicBox(imgUrl, musicUrl, music, artist) {
     const box = document.createElement('div');
     box.innerHTML = `
-    <img src="${url}">
+    <img src="${imgUrl}">
     <p class="music-title">${music}</p>
     <p class="artist">${artist}</p>
     `
     box.classList.add('music-box');
+    box.setAttribute('data-artist', artist);
+    box.setAttribute('data-title', music);
+    box.setAttribute('data-url', musicUrl);
+    box.setAttribute('data-img', imgUrl);
+
     return box;
 }
 
-function searchedMusicBox(musicUrl, imgUrl, music, artist) {
+function searchedMusicBox(imgUrl, musicUrl, music, artist) {
     const box = document.createElement('div');
     box.innerHTML = `
-    <img src="${musicUrl}">
-    <audio src="${imgUrl}"></audio>
+    <img src="${imgUrl}">
+    <audio controls src="${musicUrl}"></audio>
     <p class="searched-music-title">${music}</p>
     <p class="searched-artist">${artist}</p>
     `
     box.classList.add('searched-music-box');
+    box.setAttribute('data-artist', artist);
+    box.setAttribute('data-title', music);
+    box.setAttribute('data-url', musicUrl);
+    box.setAttribute('data-img', imgUrl);
+
     return box;
 }
 
@@ -43,6 +53,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
+
 input.addEventListener('input', async (e) => {
     const word = e.target.value;
     try {
@@ -61,8 +72,14 @@ input.addEventListener('input', async (e) => {
             // SongArray.push(...songs);
             SongArray = songs;
             console.log(SongArray)
-            const tracks = songs.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchMusicBox(song.artworkUrl60, song.trackName, song.artistName));
+            const tracks = songs.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName));
             displayBox(results, tracks);
+            //*
+            //* i cant get 'music-box' divs somewhere else
+            //*  
+            let inSearchMusics = document.querySelectorAll('.music-box');
+            console.log(inSearchMusics);
+            await fetchLyric(inSearchMusics);
             if (Object.keys(songs).length == 0) {
                 results.innerHTML = `<p class="searching">Invalid Title</p>`;
             }
@@ -82,15 +99,110 @@ input.addEventListener('input', async (e) => {
 
 
 const form = document.querySelector('form');
+const lyricPage = document.querySelector('.lyric-page');
 
 form.addEventListener('submit', (e) => {
     searchedResults.innerHTML = ``;
+    searchedResults.style.display = 'block  ';
     e.preventDefault();
     const word = input.value;
     const tracks = SongArray.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchedMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName));
-    console.log(tracks);
+    console.log("tracks",tracks);
     displayBox(searchedResults, tracks);
     input.blur();
     input.value = '';
     results.style.display = 'none';
-})
+    lyricPage.style.display = 'none';
+    let searchedMusics = document.querySelectorAll('.searched-music-box');
+    console.log("searched",searchedMusics);
+    fetchLyric(searchedMusics);
+    // searchedResults.style.display = 'none';
+
+});
+
+
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+function lyrics(img, artist, title, lyric, url) {
+    const div = document.createElement('div');
+    div.innerHTML = `
+    <ul class="music-header">
+                <li class="image"><img src="${img}" alt=""></li>
+                <li class="artist-name">${artist}</li>
+                <li class="title">${title}</li>
+                <li class="heart"></li>
+            </ul>
+            <p class="lyric">${lyric}</p>
+            <audio src="${url}" controls></audio>`;
+    div.classList.add('container');
+    lyricPage.append(div);
+}
+
+async function fetchLyric(array) {
+    array.forEach(musicBox => {
+        musicBox.addEventListener('click', async (e) => {
+            // console.log(inSearchMusics);
+            lyricPage.innerHTML = ``;
+            const artist = musicBox.getAttribute('data-artist');
+            const title = musicBox.getAttribute('data-title');
+            const url = musicBox.getAttribute('data-url');
+            const img = musicBox.getAttribute('data-img');
+            try {
+                const lyricsUrl = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`, {
+                    signal: controller.signal,
+                });
+                clearTimeout(timeoutId);
+
+                if (lyricsUrl.ok) {
+                    const lyric = await lyricsUrl.json();
+                    console.log(lyric.lyrics);
+                    input.blur();
+                    input.value = ``;
+                    searchedResults.style.display = 'none';
+                    results.style.display = 'none';
+                    lyrics(img, artist, title, lyric, url);
+                    lyricPage.style.display = 'block';
+                } else if (lyricsUrl.status === 503 || lyricsUrl.status === 504) {
+                    input.blur();
+                    input.value = ``;
+                    results.style.display = 'none';
+                    searchedResults.style.display = 'none';
+                    const lyric = "It's a Lyrics.ovh server problem. When it's reachable again, you'll be able to get lyrics."
+                    lyrics(img, artist, title, lyric, url);
+                    lyricPage.style.display = 'block';
+                } else if (lyricsUrl.status === 404) {
+                    input.blur();
+                    input.value = ``;
+                    results.style.display = 'none';
+                    searchedResults.style.display = 'none';
+                    const lyric = "Lyrics.ovh odes not have this music's lyric";
+                    lyrics(img, artist, title, lyric, url);
+                    lyricPage.style.display = 'block';
+                } else {
+                    throw new Error('Something went wrong!!!');
+                }
+
+            } catch (error) {
+                clearTimeout(timeoutId); // Always clear timeout even on error
+
+                let message;
+                if (error.name === 'AbortError') {
+                    message = "Request timed out. Lyrics.ovh may be offline.";
+                } else {
+                    message = `${error.message}`;
+                }
+
+                console.error(message);
+
+                input.blur();
+                input.value = ``;
+                results.style.display = 'none';
+                searchedResults.style.display = 'none';
+                const lyric = message;
+                lyrics(img, artist, title, lyric, url);
+                lyricPage.style.display = 'block';
+            }
+        });
+    });
+}
