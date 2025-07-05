@@ -1,6 +1,10 @@
+import { favStorage } from "./favorites.js";
+
 let SongArray = [];
 
-function searchMusicBox(imgUrl, musicUrl, music, artist) {
+favStorage.init();
+
+function searchMusicBox(imgUrl, musicUrl, music, artist, id) {
     const box = document.createElement('div');
     box.innerHTML = `
     <img src="${imgUrl}">
@@ -12,11 +16,12 @@ function searchMusicBox(imgUrl, musicUrl, music, artist) {
     box.setAttribute('data-title', music);
     box.setAttribute('data-url', musicUrl);
     box.setAttribute('data-img', imgUrl);
+    box.setAttribute('data-id', id);
 
     return box;
 }
 
-function searchedMusicBox(imgUrl, musicUrl, music, artist) {
+function searchedMusicBox(imgUrl, musicUrl, music, artist, id) {
     const box = document.createElement('div');
     box.innerHTML = `
     <img src="${imgUrl}">
@@ -29,6 +34,7 @@ function searchedMusicBox(imgUrl, musicUrl, music, artist) {
     box.setAttribute('data-title', music);
     box.setAttribute('data-url', musicUrl);
     box.setAttribute('data-img', imgUrl);
+    box.setAttribute('data-id', id);
 
     return box;
 }
@@ -72,11 +78,8 @@ input.addEventListener('input', async (e) => {
             // SongArray.push(...songs);
             SongArray = songs;
             console.log(SongArray)
-            const tracks = songs.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName));
-            displayBox(results, tracks);
-            //*
-            //* i cant get 'music-box' divs somewhere else
-            //*  
+            const tracks = songs.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName, song.trackId));
+            displayBox(results, tracks); 
             let inSearchMusics = document.querySelectorAll('.music-box');
             console.log(inSearchMusics);
             await fetchLyric(inSearchMusics);
@@ -106,15 +109,15 @@ form.addEventListener('submit', (e) => {
     searchedResults.style.display = 'block  ';
     e.preventDefault();
     const word = input.value;
-    const tracks = SongArray.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchedMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName));
-    console.log("tracks",tracks);
+    const tracks = SongArray.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchedMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName, song.trackId));
+    console.log("tracks", tracks);
     displayBox(searchedResults, tracks);
     input.blur();
     input.value = '';
     results.style.display = 'none';
     lyricPage.style.display = 'none';
     let searchedMusics = document.querySelectorAll('.searched-music-box');
-    console.log("searched",searchedMusics);
+    console.log("searched", searchedMusics);
     fetchLyric(searchedMusics);
     // searchedResults.style.display = 'none';
 
@@ -122,16 +125,16 @@ form.addEventListener('submit', (e) => {
 
 
 const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), 5000);
+const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-function lyrics(img, artist, title, lyric, url) {
+function lyrics(img, artist, title, lyric, url, id) {
     const div = document.createElement('div');
     div.innerHTML = `
     <ul class="music-header">
                 <li class="image"><img src="${img}" alt=""></li>
                 <li class="artist-name">${artist}</li>
                 <li class="title">${title}</li>
-                <li class="heart"></li>
+                <li class="heart" data-title="${title}" data-img="${img}" data-id="${id}"></li>
             </ul>
             <p class="lyric">${lyric}</p>
             <audio src="${url}" controls></audio>`;
@@ -142,12 +145,12 @@ function lyrics(img, artist, title, lyric, url) {
 async function fetchLyric(array) {
     array.forEach(musicBox => {
         musicBox.addEventListener('click', async (e) => {
-            // console.log(inSearchMusics);
             lyricPage.innerHTML = ``;
             const artist = musicBox.getAttribute('data-artist');
             const title = musicBox.getAttribute('data-title');
             const url = musicBox.getAttribute('data-url');
             const img = musicBox.getAttribute('data-img');
+            const id = musicBox.getAttribute('data-id');
             try {
                 const lyricsUrl = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`, {
                     signal: controller.signal,
@@ -161,31 +164,36 @@ async function fetchLyric(array) {
                     input.value = ``;
                     searchedResults.style.display = 'none';
                     results.style.display = 'none';
-                    lyrics(img, artist, title, lyric, url);
+                    lyrics(img, artist, title, lyric.lyrics, url, id);
                     lyricPage.style.display = 'block';
+                    const heart = document.querySelector('.heart');
+                    addFavSystem(heart);
                 } else if (lyricsUrl.status === 503 || lyricsUrl.status === 504) {
                     input.blur();
                     input.value = ``;
                     results.style.display = 'none';
                     searchedResults.style.display = 'none';
                     const lyric = "It's a Lyrics.ovh server problem. When it's reachable again, you'll be able to get lyrics."
-                    lyrics(img, artist, title, lyric, url);
+                    lyrics(img, artist, title, lyric, url, id);
                     lyricPage.style.display = 'block';
+                    const heart = document.querySelector('.heart');
+                    addFavSystem(heart);
                 } else if (lyricsUrl.status === 404) {
                     input.blur();
                     input.value = ``;
                     results.style.display = 'none';
                     searchedResults.style.display = 'none';
                     const lyric = "Lyrics.ovh odes not have this music's lyric";
-                    lyrics(img, artist, title, lyric, url);
+                    lyrics(img, artist, title, lyric, url, id);
                     lyricPage.style.display = 'block';
+                    const heart = document.querySelector('.heart');
+                    addFavSystem(heart);
                 } else {
                     throw new Error('Something went wrong!!!');
                 }
 
             } catch (error) {
                 clearTimeout(timeoutId); // Always clear timeout even on error
-
                 let message;
                 if (error.name === 'AbortError') {
                     message = "Request timed out. Lyrics.ovh may be offline.";
@@ -194,15 +202,36 @@ async function fetchLyric(array) {
                 }
 
                 console.error(message);
-
                 input.blur();
                 input.value = ``;
                 results.style.display = 'none';
                 searchedResults.style.display = 'none';
                 const lyric = message;
-                lyrics(img, artist, title, lyric, url);
+                lyrics(img, artist, title, lyric, url, id);
                 lyricPage.style.display = 'block';
+                const heart = document.querySelector('.heart');
+                addFavSystem(heart);
             }
         });
+    });
+}
+
+function addFavSystem(node) {
+    const favTitle = node.getAttribute('data-title');
+    const favImg = node.getAttribute('data-img');
+    const favId = node.getAttribute('data-id');
+    if (favStorage.existsFav(favId)) {
+        node.style.content = "url('images/love.png')";
+    } else {
+        node.style.content = "url('images/heart.png')";
+    }
+    node.addEventListener('click', () => {
+        if (!favStorage.existsFav(favId)) {
+            favStorage.setItem(favId, favImg, favTitle);
+            node.style.content = "url('images/love.png')";
+        }else{
+            favStorage.removeItem(favId);
+            node.style.content = "url('images/heart.png')";
+        }
     });
 }
