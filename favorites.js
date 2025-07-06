@@ -12,11 +12,14 @@ const favStorage = {
         const exists = storage.some(item => item.id == id);
         return exists;
     },
-    setItem(id, img, title) {
+    setItem(id, img, title, artist, lyric, audio) {
         const obj = {
             id: id,
             imgUrl: img,
-            title: title
+            title: title,
+            artist: artist,
+            lyric: lyric,
+            audioUrl: audio
         };
         const storage = JSON.parse(localStorage.getItem(KEY));
         // console.log(obj);
@@ -25,7 +28,7 @@ const favStorage = {
     },
     removeItem(id) {
         const storage = JSON.parse(localStorage.getItem(KEY));
-        const index = storage.indexOf(id);
+        const index = storage.findIndex(item => item.id === id);
         storage.splice(index, 1);
         localStorage.setItem(KEY, JSON.stringify(storage));
     }

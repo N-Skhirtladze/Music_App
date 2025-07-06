@@ -278,3 +278,90 @@ audio {
     margin-top: 8%;
     margin-left: 27%;
 }
+
+.menu-icon {
+    position: fixed;
+    width: 30px;
+    height: 20px;
+    transition: background 0.3s ease;
+    cursor: pointer;
+    left: 2%;
+    top: 5%;
+    z-index: 2;
+}
+
+.line {
+    position: absolute;
+    width: 30px;
+    height: 4px;
+    background: white;
+    transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+}
+
+.top {
+    top: -10px;
+}
+
+.bottom {
+    top: 10px;
+}
+
+.top-change {
+    transform: rotate(45deg);
+    top: 0;
+}
+
+.bottom-change {
+    transform: rotate(-45deg);
+    top: 0;
+}
+
+.favorites-section {
+    position: fixed;
+    height: 100vh;
+    width: 0%;
+    left: 0%;
+    background-color: #EE10B0;
+    padding-top: 5%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    transition: .3s;
+    white-space: nowrap;
+}
+
+.open {
+    width: 20%;
+    transition: .3s;
+}
+
+.favorites-section p:first-child {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+}
+
+.each-favorite {
+    width: 85%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-top: 20px;
+    transition: .2s;
+    cursor: pointer;
+}
+
+.each-favorite:hover {
+    box-shadow: 3px 3px 3px 3px #8b186b;
+    transition: .2s;
+}
+
+.each-favorite p {
+    width: 80%;
+    display: flex;
+    justify-content: start;
+    color: white;
+    font-weight: bold;
+}

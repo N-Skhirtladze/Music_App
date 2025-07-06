@@ -79,7 +79,7 @@ input.addEventListener('input', async (e) => {
             SongArray = songs;
             console.log(SongArray)
             const tracks = songs.filter((song) => song.trackName.toLowerCase().includes(word.toLowerCase()) && !song.trackName.includes('(')).map((song) => searchMusicBox(song.artworkUrl60, song.previewUrl, song.trackName, song.artistName, song.trackId));
-            displayBox(results, tracks); 
+            displayBox(results, tracks);
             let inSearchMusics = document.querySelectorAll('.music-box');
             console.log(inSearchMusics);
             await fetchLyric(inSearchMusics);
@@ -134,7 +134,7 @@ function lyrics(img, artist, title, lyric, url, id) {
                 <li class="image"><img src="${img}" alt=""></li>
                 <li class="artist-name">${artist}</li>
                 <li class="title">${title}</li>
-                <li class="heart" data-title="${title}" data-img="${img}" data-id="${id}"></li>
+                <li class="heart" data-title="${title}" data-img="${img}" data-id="${id}" data-audio="${url}" data-lyric="${lyric}" data-artist="${artist}"></li>
             </ul>
             <p class="lyric">${lyric}</p>
             <audio src="${url}" controls></audio>`;
@@ -220,6 +220,9 @@ function addFavSystem(node) {
     const favTitle = node.getAttribute('data-title');
     const favImg = node.getAttribute('data-img');
     const favId = node.getAttribute('data-id');
+    const favAudio = node.getAttribute('data-audio');
+    const favLyric = node.getAttribute('data-lyric');
+    const favArtist = node.getAttribute('data-artist');
     if (favStorage.existsFav(favId)) {
         node.style.content = "url('images/love.png')";
     } else {
@@ -227,11 +230,23 @@ function addFavSystem(node) {
     }
     node.addEventListener('click', () => {
         if (!favStorage.existsFav(favId)) {
-            favStorage.setItem(favId, favImg, favTitle);
+            favStorage.setItem(favId, favImg, favTitle, favArtist, favLyric, favAudio);
             node.style.content = "url('images/love.png')";
-        }else{
+        } else {
             favStorage.removeItem(favId);
             node.style.content = "url('images/heart.png')";
         }
     });
 }
+
+
+const burger = document.querySelector('.menu-icon');
+const before = document.querySelector('.top');
+const after = document.querySelector('.bottom');
+const sideBar = document.querySelector('.favorites-section');
+
+burger.addEventListener('click', () => {
+    sideBar.classList.toggle('open');
+    before.classList.toggle('top-change');
+    after.classList.toggle('bottom-change');
+})
