@@ -128,6 +128,7 @@ const controller = new AbortController();
 const timeoutId = setTimeout(() => controller.abort(), 7000);
 
 function lyrics(img, artist, title, lyric, url, id) {
+    lyricPage.innerHTML = '';
     const div = document.createElement('div');
     div.innerHTML = `
     <ul class="music-header">
@@ -236,6 +237,13 @@ function addFavSystem(node) {
             favStorage.removeItem(favId);
             node.style.content = "url('images/heart.png')";
         }
+        sideBar.innerHTML = `<p>Favorites</p>`;
+        const favoritedStorage = favStorage.getStorage();
+        const favorited = favoritedStorage.map(item => favoriteMusic(item.imgUrl, item.title));
+        displayBox(sideBar, favorited);
+        sideBar.classList.remove('open');
+        before.classList.remove('top-change');
+        after.classList.remove('bottom-change');
     });
 }
 
@@ -249,4 +257,55 @@ burger.addEventListener('click', () => {
     sideBar.classList.toggle('open');
     before.classList.toggle('top-change');
     after.classList.toggle('bottom-change');
-})
+    sideBar.innerHTML = `<p>Favorites</p>`;
+    const favoritedStorage = favStorage.getStorage();
+    const favorited = favoritedStorage.map(item => favoriteMusic(item.imgUrl, item.title, item.id));
+    displayBox(sideBar, favorited);
+    const eachFavorite = document.querySelectorAll('.each-favorite');
+    eachFavorite.forEach(box => {
+        box.addEventListener('click', () => {
+            // console.log('clicked');
+            // console.log(id)
+            const id = box.getAttribute('data-id');
+            const result = favoritedStorage.find(favorite => favorite.id == id);
+            // console.log(result);
+            lyrics(result.imgUrl, result.artist, result.title, result.lyric, result.audioUrl, result.id);
+            lyricPage.style.display = 'block';
+            const heart = document.querySelector('.heart');
+            // console.log(heart);
+            if (favStorage.existsFav(id)) {
+                heart.style.content = "url('images/love.png')";
+            }
+            heart.addEventListener('click', () => {
+                // console.log(favId);
+                if (!favStorage.existsFav(id)) {
+                    favStorage.setItem(id, result.imgUrl, result.title, result.artist, result.lyric, result.audioUrl);
+                    heart.style.content = "url('images/love.png')";
+                } else {
+                    favStorage.removeItem(id);
+                    heart.style.content = "url('images/heart.png')";
+                }
+                sideBar.innerHTML = `<p>Favorites</p>`;
+                const favoritedStorage = favStorage.getStorage();
+                const favorited = favoritedStorage.map(item => favoriteMusic(item.imgUrl, item.title));
+                displayBox(sideBar, favorited);
+
+                sideBar.classList.remove('open');
+                before.classList.remove('top-change');
+                after.classList.remove('bottom-change');
+            })
+        })
+    });
+});
+
+function favoriteMusic(img, title, id) {
+    const box = document.createElement('div');
+    box.classList.add('each-favorite');
+    box.innerHTML = `
+        <img src="${img}" alt="" style="width: 40px; height=40px;">
+        <p class="favorite-title">${title}</p>
+   `;
+    box.setAttribute('data-id', id)
+    return box;
+}
+

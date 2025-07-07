@@ -326,9 +326,17 @@ audio {
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow: hidden;
+    overflow: scroll;
     transition: .3s;
     white-space: nowrap;
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.favorites-section::-webkit-scrollbar {
+    display: none;
 }
 
 .open {

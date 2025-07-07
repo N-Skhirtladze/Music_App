@@ -31,6 +31,15 @@ const favStorage = {
         const index = storage.findIndex(item => item.id === id);
         storage.splice(index, 1);
         localStorage.setItem(KEY, JSON.stringify(storage));
+    },
+    getStorage(){
+        const storage = JSON.parse(localStorage.getItem(KEY));
+        return storage;
+    },
+    getSize(){
+        const storage = JSON.parse(localStorage.getItem(KEY));
+        const size = Object.keys(storage).length;
+        return size;
     }
 }
 
